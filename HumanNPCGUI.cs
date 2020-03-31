@@ -18,7 +18,7 @@ using Oxide.Game.Rust.Cui;
 namespace Oxide.Plugins
 {
     [Info("HumanNPC Editor GUI", "RFC1920", "1.0.2")]
-    [Description("GUI for editing HumanNPC settings")]
+    [Description("Oxide Plugin")]
     class HumanNPCGUI : RustPlugin
     {
         #region vars
@@ -107,11 +107,9 @@ namespace Oxide.Plugins
                         CuiHelper.DestroyUi(player, NPCGUK);
                         break;
                     case "npcselkit":
-                        Puts($"selkit {args[1]} {args[2]}");
                         NPCKitGUI(player, ulong.Parse(args[1]), args[2]);
                         break;
                     case "kitsel":
-                        Puts($"kitsel {args[1]} {args[2]}");
                         CuiHelper.DestroyUi(player, NPCGUK);
                         npc = ulong.Parse(args[1]);
                         Interface.CallHook("SetHumanNPCInfo", npc, "spawnkit", args[2]);
@@ -128,7 +126,6 @@ namespace Oxide.Plugins
                         npcEditGUI(player, npc);
                         break;
                     case "spawn":
-                        Puts($"spawn {args[1]}");
                         npc = ulong.Parse(args[1]);
                         string pos = args[3];
                         pos = pos.Replace("(","").Replace(")","");
@@ -136,7 +133,6 @@ namespace Oxide.Plugins
                         npcEditGUI(player, npc);
                         break;
                     case "spawnhere":
-                        Puts($"spawnhere {args[1]}");
                         npc = ulong.Parse(args[1]);
                         string newSpawn = player.transform.position.x.ToString() + "," + player.transform.position.y + "," + player.transform.position.z.ToString();
                         Quaternion newRot;
@@ -152,7 +148,6 @@ namespace Oxide.Plugins
                         npcEditGUI(player, npc);
                         break;
                     case "npcset":
-                        Puts($"npcset {args[1]} {args[2]} {args[3]} {args[4]}");
                         npc = ulong.Parse(args[1]);
                         Interface.CallHook("SetHumanNPCInfo", npc, args[2], args[4]);
                         npcEditGUI(player, npc);
