@@ -17,13 +17,13 @@ using Oxide.Game.Rust.Cui;
 
 namespace Oxide.Plugins
 {
-    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.0")]
+    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.1")]
     [Description("Oxide Plugin")]
     class HumanNPCGUI : RustPlugin
     {
         #region vars
         [PluginReference]
-        Plugin HumanNPC, Kits;
+        Plugin HumanNPC;
 
         private const string permNPCGuiUse = "humannpcgui.use";
         const string NPCGUI = "npcgui.editor";
@@ -289,8 +289,15 @@ namespace Oxide.Plugins
                     }
                     if(info.Key == "kit")
                     {
-                        string kitname = info.Value != null ? info.Value : Lang("none");
-                        UI.Button(ref container, NPCGUI, UI.Color("#d85540", 1f), kitname, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui npcselkit {npc.ToString()} {kitname}");
+                        if(plugins.Exists("Kits"))
+                        {
+                            string kitname = info.Value != null ? info.Value : Lang("none");
+                            UI.Button(ref container, NPCGUI, UI.Color("#d85540", 1f), kitname, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui npcselkit {npc.ToString()} {kitname}");
+                        }
+                        else
+                        {
+                            UI.Label(ref container, NPCGUI, UI.Color("#ffffff", 1f), Lang("none"), 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}");
+                        }
                     }
                     else if(info.Key == "spawnInfo")
                     {
