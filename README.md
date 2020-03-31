@@ -15,9 +15,11 @@ Click the kit name button next to "kit" to select kits from the Kits plugin.
 
 Click any of the blue buttons to toggle the associate setting.
 
-Type new data into any of the number fields and hit enter to update that setting.
+Type new data into any of the number fields and press ENTER to update that setting.
 
-On the NPC select screen, click "Create New" to create a new NPC.
+You may also enter the spawn location directly as (X, Y, Z) and press ENTER to change.  Or, click "Spawn Here" to move the NPC to your current location.
+
+Click "Create New" to create a new NPC.
 
 ## Configuration
 
