@@ -11,6 +11,12 @@ You do not need to be near your NPCs to use the plugin.  Simply enter npcgui in 
 
 Click "Select" to choose an NPC.  NPCs which are part of an NPC Music Player band are shown in green, and all others are listed in blue.
 
+Click the kit name button next to "kit" to select kits from the Kits plugin.
+
+Click any of the blue buttons to toggle the associate setting.
+
+Type new data into any of the number fields and hit enter to update that setting.
+
 On the NPC select screen, click "Create New" to create a new NPC.
 
 ## Configuration
