@@ -18,7 +18,7 @@ using Oxide.Game.Rust.Cui;
 namespace Oxide.Plugins
 {
     [Info("HumanNPC Editor GUI", "RFC1920", "1.0.2")]
-    [Description("Oxide Plugin")]
+    [Description("GUI for editing HumanNPC settings")]
     class HumanNPCGUI : RustPlugin
     {
         #region vars
