@@ -13,7 +13,7 @@ Click "Select" to choose an NPC.  NPCs which are part of an NPC Music Player ban
 
 Click the kit name button next to "kit" to select kits from the Kits plugin.
 
-Click any of the blue buttons to toggle the associate setting.
+Click any of the blue buttons to toggle the associated setting.
 
 Type new data into any of the number fields and press ENTER to update that setting.
 
