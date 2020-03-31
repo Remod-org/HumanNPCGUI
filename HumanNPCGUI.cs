@@ -99,21 +99,25 @@ namespace Oxide.Plugins
             var player = iplayer.Object as BasePlayer;
             ulong npc = 0;
 
+            // Sure, this looks a little crazy.  But, all the user needs to type is /npcgui.  The rest is driven from the GUI.
             if(args.Length > 0)
             {
                 switch(args[0])
                 {
-                    case "selkitclose":
-                        CuiHelper.DestroyUi(player, NPCGUK);
-                        break;
                     case "npcselkit":
-                        NPCKitGUI(player, ulong.Parse(args[1]), args[2]);
+                        if(args.Length > 2)
+                        {
+                            NPCKitGUI(player, ulong.Parse(args[1]), args[2]);
+                        }
                         break;
                     case "kitsel":
-                        CuiHelper.DestroyUi(player, NPCGUK);
-                        npc = ulong.Parse(args[1]);
-                        Interface.CallHook("SetHumanNPCInfo", npc, "spawnkit", args[2]);
-                        npcEditGUI(player, npc);
+                        if(args.Length > 2)
+                        {
+                            CuiHelper.DestroyUi(player, NPCGUK);
+                            npc = ulong.Parse(args[1]);
+                            Interface.CallHook("SetHumanNPCInfo", npc, "spawnkit", args[2]);
+                            npcEditGUI(player, npc);
+                        }
                         break;
                     case "npctoggle":
                         if(args.Length > 3)
@@ -126,40 +130,57 @@ namespace Oxide.Plugins
                         npcEditGUI(player, npc);
                         break;
                     case "spawn":
-                        npc = ulong.Parse(args[1]);
-                        string pos = args[3];
-                        pos = pos.Replace("(","").Replace(")","");
-                        Interface.CallHook("SetHumanNPCInfo", npc, "spawn", pos);
-                        npcEditGUI(player, npc);
+                        if(args.Length > 3)
+                        {
+                            npc = ulong.Parse(args[1]);
+                            string pos = args[3];
+                            pos = pos.Replace("(","").Replace(")","");
+                            Interface.CallHook("SetHumanNPCInfo", npc, "spawn", pos);
+                            npcEditGUI(player, npc);
+                        }
                         break;
                     case "spawnhere":
-                        npc = ulong.Parse(args[1]);
-                        string newSpawn = player.transform.position.x.ToString() + "," + player.transform.position.y + "," + player.transform.position.z.ToString();
-                        Quaternion newRot;
-                        TryGetPlayerView(player, out newRot);
-                        Interface.CallHook("SetHumanNPCInfo", npc, "spawn", newSpawn, newRot.ToString());
-                        npcEditGUI(player, npc);
+                        if(args.Length > 1)
+                        {
+                            npc = ulong.Parse(args[1]);
+                            string newSpawn = player.transform.position.x.ToString() + "," + player.transform.position.y + "," + player.transform.position.z.ToString();
+                            Quaternion newRot;
+                            TryGetPlayerView(player, out newRot);
+                            Interface.CallHook("SetHumanNPCInfo", npc, "spawn", newSpawn, newRot.ToString());
+                            npcEditGUI(player, npc);
+                        }
                         break;
                     case "new":
-                        CuiHelper.DestroyUi(player, NPCGUS);
-                        Quaternion currentRot;
-                        TryGetPlayerView(player, out currentRot);
-                        npc = (ulong)Interface.CallHook("SpawnHumanNPC", player.transform.position, currentRot, "HumanNPCGUI");
-                        npcEditGUI(player, npc);
+                        if(args.Length > 1)
+                        {
+                            CuiHelper.DestroyUi(player, NPCGUS);
+                            Quaternion currentRot;
+                            TryGetPlayerView(player, out currentRot);
+                            npc = (ulong)Interface.CallHook("SpawnHumanNPC", player.transform.position, currentRot, "HumanNPCGUI");
+                            npcEditGUI(player, npc);
+                        }
                         break;
                     case "npcset":
-                        npc = ulong.Parse(args[1]);
-                        Interface.CallHook("SetHumanNPCInfo", npc, args[2], args[4]);
-                        npcEditGUI(player, npc);
+                        if(args.Length > 1)
+                        {
+                            npc = ulong.Parse(args[1]);
+                            Interface.CallHook("SetHumanNPCInfo", npc, args[2], args[4]);
+                            npcEditGUI(player, npc);
+                        }
                         break;
                     case "close":
+                        CuiHelper.DestroyUi(player, NPCGUS);
                         CuiHelper.DestroyUi(player, NPCGUI);
+                        CuiHelper.DestroyUi(player, NPCGUK);
                         break;
                     case "select":
                         NPCSelectGUI(player);
                         break;
                     case "selclose":
                         CuiHelper.DestroyUi(player, NPCGUS);
+                        break;
+                    case "selkitclose":
+                        CuiHelper.DestroyUi(player, NPCGUK);
                         break;
                     case "npc":
                     default:
