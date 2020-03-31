@@ -17,7 +17,7 @@ using Oxide.Game.Rust.Cui;
 
 namespace Oxide.Plugins
 {
-    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.1")]
+    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.2")]
     [Description("Oxide Plugin")]
     class HumanNPCGUI : RustPlugin
     {
@@ -139,7 +139,9 @@ namespace Oxide.Plugins
                         Puts($"spawnhere {args[1]}");
                         npc = ulong.Parse(args[1]);
                         string newSpawn = player.transform.position.x.ToString() + "," + player.transform.position.y + "," + player.transform.position.z.ToString();
-                        Interface.CallHook("SetHumanNPCInfo", npc, "spawn", newSpawn);
+                        Quaternion newRot;
+                        TryGetPlayerView(player, out newRot);
+                        Interface.CallHook("SetHumanNPCInfo", npc, "spawn", newSpawn, newRot.ToString());
                         npcEditGUI(player, npc);
                         break;
                     case "new":
