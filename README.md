@@ -1,7 +1,7 @@
 # Human NPC GUI (Remod original)
 GUI for managing HumanNPC settings
 
-Current version 1.0.0 [Download](https://code.remod.org/HumanNPCGUI.cs)
+Current version 1.0.1 [Download](https://code.remod.org/HumanNPCGUI.cs)
 
 Provides a GUI to manage your HumanNPC NPCs.
 
