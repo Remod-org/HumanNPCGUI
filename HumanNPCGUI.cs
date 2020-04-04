@@ -17,7 +17,7 @@ using Oxide.Game.Rust.Cui;
 
 namespace Oxide.Plugins
 {
-    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.2")]
+    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.3")]
     [Description("Oxide Plugin")]
     class HumanNPCGUI : RustPlugin
     {
@@ -239,6 +239,7 @@ namespace Oxide.Plugins
                     { "allowsit", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "allowsit") },
                     { "allowride", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "allowride") },
                     { "needsAmmo", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "needsAmmo") },
+                    { "dropWeapon", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "dropWeapon") },
                     { "health", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "health") },
                     { "attackDistance", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "attackDistance") },
                     { "damageAmount", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "damageAmount") },
@@ -276,6 +277,7 @@ namespace Oxide.Plugins
                     { "allowsit", true },
                     { "allowride", true },
                     { "needsAmmo", true },
+                    { "dropWeapon", true },
                     { "stopandtalk", true },
                     { "hostileTowardsArmed", true },
                     { "hostileTowardsArmedHard", true },
@@ -556,6 +558,28 @@ namespace Oxide.Plugins
                         },
                         new CuiRectTransformComponent { AnchorMin = min, AnchorMax = max },
                         new CuiNeedsCursorComponent()
+                    }
+                });
+            }
+            public static void Icon(ref CuiElementContainer container, string panel, string color, string imageurl, string min, string max)
+            {
+                container.Add(new CuiElement
+                {
+                    Name = CuiHelper.GetGuid(),
+                    Parent = panel,
+                    Components =
+                    {
+                        new CuiRawImageComponent
+                        {
+                            Url = imageurl,
+                            Sprite = "assets/content/textures/generic/fulltransparent.tga",
+                            Color = color
+                        },
+                        new CuiRectTransformComponent
+                        {
+                            AnchorMin = min,
+                            AnchorMax = max 
+                        }
                     }
                 });
             }
