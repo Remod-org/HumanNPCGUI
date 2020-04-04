@@ -17,7 +17,7 @@ using Oxide.Game.Rust.Cui;
 
 namespace Oxide.Plugins
 {
-    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.3")]
+    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.4")]
     [Description("Oxide Plugin")]
     class HumanNPCGUI : RustPlugin
     {
@@ -151,14 +151,11 @@ namespace Oxide.Plugins
                         }
                         break;
                     case "new":
-                        if(args.Length > 1)
-                        {
-                            CuiHelper.DestroyUi(player, NPCGUS);
-                            Quaternion currentRot;
-                            TryGetPlayerView(player, out currentRot);
-                            npc = (ulong)Interface.CallHook("SpawnHumanNPC", player.transform.position, currentRot, "HumanNPCGUI");
-                            npcEditGUI(player, npc);
-                        }
+                        CuiHelper.DestroyUi(player, NPCGUS);
+                        Quaternion currentRot;
+                        TryGetPlayerView(player, out currentRot);
+                        npc = (ulong)Interface.CallHook("SpawnHumanNPC", player.transform.position, currentRot, "HumanNPCGUI");
+                        npcEditGUI(player, npc);
                         break;
                     case "npcset":
                         if(args.Length > 1)
