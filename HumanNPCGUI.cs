@@ -1,23 +1,16 @@
 //#define DEBUG
-using System;
-using System.Reflection;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Globalization;
 using Oxide.Core;
-using Oxide.Core.Configuration;
 using Oxide.Core.Libraries.Covalence;
-using System.Text;
-using System.Linq;
 using Oxide.Core.Plugins;
-using System.Linq;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Oxide.Game.Rust.Cui;
 
 namespace Oxide.Plugins
 {
-    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.4")]
+    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.5")]
     [Description("Oxide Plugin")]
     class HumanNPCGUI : RustPlugin
     {
@@ -41,7 +34,7 @@ namespace Oxide.Plugins
         #region init
         void Init()
         {
-            AddCovalenceCommand("npcgui", "npcEdit");
+            AddCovalenceCommand("npcgui", "NpcEdit");
 
             permission.RegisterPermission(permNPCGuiUse, this);
 
@@ -61,6 +54,7 @@ namespace Oxide.Plugins
                 ["guihelp3"] = "For kit, press the button to select a kit.",
                 ["add"] = "Add",
                 ["new"] = "Create New",
+                ["remove"] = "Remove",
                 ["spawnhere"] = "Spawn Here",
                 ["name"] = "Name",
                 ["online"] = "Online",
@@ -93,7 +87,7 @@ namespace Oxide.Plugins
 
         #region Main
         [Command("npcgui")]
-        void npcEdit(IPlayer iplayer, string command, string[] args)
+        void NpcEdit(IPlayer iplayer, string command, string[] args)
         {
             if(!iplayer.HasPermission(permNPCGuiUse)) return;
             var player = iplayer.Object as BasePlayer;
@@ -116,7 +110,7 @@ namespace Oxide.Plugins
                             CuiHelper.DestroyUi(player, NPCGUK);
                             npc = ulong.Parse(args[1]);
                             Interface.CallHook("SetHumanNPCInfo", npc, "spawnkit", args[2]);
-                            npcEditGUI(player, npc);
+                            NpcEditGUI(player, npc);
                         }
                         break;
                     case "npctoggle":
@@ -127,7 +121,7 @@ namespace Oxide.Plugins
                             string newval = args[3] == "True" ? "false" : "true";
                             Interface.CallHook("SetHumanNPCInfo", npc, toset, newval);
                         }
-                        npcEditGUI(player, npc);
+                        NpcEditGUI(player, npc);
                         break;
                     case "spawn":
                         if(args.Length > 3)
@@ -136,7 +130,7 @@ namespace Oxide.Plugins
                             string pos = args[3];
                             pos = pos.Replace("(","").Replace(")","");
                             Interface.CallHook("SetHumanNPCInfo", npc, "spawn", pos);
-                            npcEditGUI(player, npc);
+                            NpcEditGUI(player, npc);
                         }
                         break;
                     case "spawnhere":
@@ -147,7 +141,7 @@ namespace Oxide.Plugins
                             Quaternion newRot;
                             TryGetPlayerView(player, out newRot);
                             Interface.CallHook("SetHumanNPCInfo", npc, "spawn", newSpawn, newRot.ToString());
-                            npcEditGUI(player, npc);
+                            NpcEditGUI(player, npc);
                         }
                         break;
                     case "new":
@@ -155,14 +149,23 @@ namespace Oxide.Plugins
                         Quaternion currentRot;
                         TryGetPlayerView(player, out currentRot);
                         npc = (ulong)Interface.CallHook("SpawnHumanNPC", player.transform.position, currentRot, "HumanNPCGUI");
-                        npcEditGUI(player, npc);
+                        NpcEditGUI(player, npc);
+                        break;
+                    case "remove":
+                        if (args.Length == 2)
+                        {
+                            npc = ulong.Parse(args[1]);
+                            CuiHelper.DestroyUi(player, NPCGUI);
+                            Interface.CallHook("RemoveHumanNPC", npc);
+                            NpcEditGUI(player);
+                        }
                         break;
                     case "npcset":
                         if(args.Length > 1)
                         {
                             npc = ulong.Parse(args[1]);
                             Interface.CallHook("SetHumanNPCInfo", npc, args[2], args[4]);
-                            npcEditGUI(player, npc);
+                            NpcEditGUI(player, npc);
                         }
                         break;
                     case "close":
@@ -185,18 +188,18 @@ namespace Oxide.Plugins
                         {
                             CuiHelper.DestroyUi(player, NPCGUS);
                             npc = ulong.Parse(args[1]);
-                            npcEditGUI(player, npc);
+                            NpcEditGUI(player, npc);
                         }
                         break;
                 }
             }
             else
             {
-                npcEditGUI(player);
+                NpcEditGUI(player);
             }
         }
 
-        void npcEditGUI(BasePlayer player, ulong npc = 0)
+        void NpcEditGUI(BasePlayer player, ulong npc = 0)
         {
             if(player == null) return;
             CuiHelper.DestroyUi(player, NPCGUI);
@@ -208,6 +211,14 @@ namespace Oxide.Plugins
             }
 
             CuiElementContainer container = UI.Container(NPCGUI, UI.Color("2b2b2b", 1f), "0.05 0.05", "0.95 0.95", true, "Overlay");
+            if (npc == 0)
+            {
+                UI.Button(ref container, NPCGUI, UI.Color("#cc3333", 1f), Lang("new"), 12, "0.79 0.95", "0.85 0.98", $"npcgui new");
+            }
+            else
+            {
+                UI.Button(ref container, NPCGUI, UI.Color("#cc3333", 1f), Lang("remove"), 12, "0.79 0.95", "0.85 0.98", $"npcgui remove {npc.ToString()}");
+            }
             UI.Button(ref container, NPCGUI, UI.Color("#d85540", 1f), Lang("select"), 12, "0.86 0.95", "0.92 0.98", $"npcgui select");
             UI.Button(ref container, NPCGUI, UI.Color("#d85540", 1f), Lang("close"), 12, "0.93 0.95", "0.99 0.98", $"npcgui close");
             UI.Label(ref container, NPCGUI, UI.Color("#ffffff", 1f), Lang("npcgui") + ": " + npcname, 24, "0.2 0.92", "0.7 1");
@@ -225,6 +236,7 @@ namespace Oxide.Plugins
                 {
                     { "displayName", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "displayName") },
                     { "kit", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "spawnkit") },
+//                    { "visible", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "visible") },
                     { "invulnerable", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "invulnerable") },
                     { "lootable", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "lootable") },
                     { "hostile", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "hostile") },
@@ -264,6 +276,7 @@ namespace Oxide.Plugins
                 Dictionary<string, bool> isBool = new Dictionary<string, bool>
                 {
                     { "enable", true },
+//                    { "visible", true },
                     { "invulnerable", true },
                     { "lootable", true },
                     { "hostile", true },
@@ -365,12 +378,10 @@ namespace Oxide.Plugins
             UI.Button(ref container, NPCGUS, UI.Color("#d85540", 1f), Lang("close"), 12, "0.92 0.93", "0.985 0.98", $"npcgui selclose");
             int col = 0;
             int row = 0;
-            bool found = false;
 
             List<ulong> npcs = (List<ulong>)HumanNPC?.Call("HumanNPCs");
             foreach(ulong npc in npcs)
             {
-                found = true;
                 if(row > 10)
                 {
                     row = 0;
@@ -419,7 +430,7 @@ namespace Oxide.Plugins
                 if(kit == null) kit = Lang("none");
                 if(kitinfo.Key == kit)
                 {
-                       UI.Button(ref container, NPCGUK, UI.Color("#d85540", 1f), kitinfo.Key, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui kitsel {npc.ToString()} {kitinfo.Key}");
+                    UI.Button(ref container, NPCGUK, UI.Color("#d85540", 1f), kitinfo.Key, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui kitsel {npc.ToString()} {kitinfo.Key}");
                 }
                 else
                 {
@@ -575,7 +586,7 @@ namespace Oxide.Plugins
                         new CuiRectTransformComponent
                         {
                             AnchorMin = min,
-                            AnchorMax = max 
+                            AnchorMax = max
                         }
                     }
                 });
