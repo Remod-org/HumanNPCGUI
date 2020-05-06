@@ -10,7 +10,7 @@ using Oxide.Game.Rust.Cui;
 
 namespace Oxide.Plugins
 {
-    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.5")]
+    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.6")]
     [Description("Oxide Plugin")]
     class HumanNPCGUI : RustPlugin
     {
@@ -56,6 +56,7 @@ namespace Oxide.Plugins
                 ["new"] = "Create New",
                 ["remove"] = "Remove",
                 ["spawnhere"] = "Spawn Here",
+                ["tpto"] = "Teleport to NPC",
                 ["name"] = "Name",
                 ["online"] = "Online",
                 ["offline"] = "Offline",
@@ -142,6 +143,15 @@ namespace Oxide.Plugins
                             TryGetPlayerView(player, out newRot);
                             Interface.CallHook("SetHumanNPCInfo", npc, "spawn", newSpawn, newRot.ToString());
                             NpcEditGUI(player, npc);
+                        }
+                        break;
+                    case "tpto":
+                        if(args.Length > 1)
+                        {
+                            npc = ulong.Parse(args[1]);
+                            CuiHelper.DestroyUi(player, NPCGUI);
+                            string spawnpos = (string)HumanNPC?.Call("GetHumanNPCInfo", npc, "spawnInfo");
+                            Teleport(player, StringToVector3(spawnpos));
                         }
                         break;
                     case "new":
@@ -335,6 +345,12 @@ namespace Oxide.Plugins
                         UI.Input(ref container, NPCGUI, UI.Color("#ffffff", 1f), info.Value, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui spawn {npc.ToString()} {info.Key} ");
                         posb = GetButtonPositionP(row, col + 2);
                         UI.Button(ref container, NPCGUI, UI.Color("#d85540", 1f), Lang("spawnhere"), 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui spawnhere {npc.ToString()} ");
+                        if (StringToVector3(info.Value) != Vector3.zero)
+                        {
+                            row++;
+                            posb = GetButtonPositionP(row, col + 2);
+                            UI.Button(ref container, NPCGUI, UI.Color("#d85540", 1f), Lang("tpto"), 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui tpto {npc.ToString()} ");
+                        }
                     }
                     else if(isLarge.ContainsKey(info.Key))
                     {
@@ -464,6 +480,48 @@ namespace Oxide.Plugins
             if(player.serverInput?.current == null) return false;
             viewAngle = Quaternion.Euler(player.serverInput.current.aimAngles);
             return true;
+        }
+
+        public void Teleport(BasePlayer player, Vector3 position)
+        {
+            if(player.net?.connection != null) player.SetPlayerFlag(BasePlayer.PlayerFlags.ReceivingSnapshot, true);
+
+            player.SetParent(null, true, true);
+            player.EnsureDismounted();
+            player.Teleport(position);
+            player.UpdateNetworkGroup();
+            player.StartSleeping();
+            player.SendNetworkUpdateImmediate(false);
+
+            if(player.net?.connection != null) player.ClientRPCPlayer(null, player, "StartLoading");
+        }
+
+        private void StartSleeping(BasePlayer player)
+        {
+            if (player.IsSleeping()) return;
+            player.SetPlayerFlag(BasePlayer.PlayerFlags.Sleeping, true);
+            if (!BasePlayer.sleepingPlayerList.Contains(player)) BasePlayer.sleepingPlayerList.Add(player);
+            player.CancelInvoke("InventoryUpdate");
+        }
+
+        public static Vector3 StringToVector3(string sVector)
+        {
+            // Remove the parentheses
+            if (sVector.StartsWith("(") && sVector.EndsWith(")"))
+            {
+                sVector = sVector.Substring(1, sVector.Length - 2);
+            }
+
+            // split the items
+            string[] sArray = sVector.Split(',');
+
+            // store as a Vector3
+            Vector3 result = new Vector3(
+                float.Parse(sArray[0]),
+                float.Parse(sArray[1]),
+                float.Parse(sArray[2]));
+
+            return result;
         }
         #endregion
 
