@@ -1,4 +1,26 @@
 //#define DEBUG
+#region License (GPL v3)
+/*
+    DESCRIPTION
+    Copyright (c) 2020 RFC1920 <desolationoutpostpve@gmail.com>
+
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 2
+    of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+    Optionally you can also view the license at <http://www.gnu.org/licenses/>.
+*/
+#endregion License Information (GPL v3)
 using System.Collections.Generic;
 using UnityEngine;
 using System.Globalization;
@@ -10,7 +32,7 @@ using Oxide.Game.Rust.Cui;
 
 namespace Oxide.Plugins
 {
-    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.6")]
+    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.7")]
     [Description("Oxide Plugin")]
     class HumanNPCGUI : RustPlugin
     {
@@ -24,6 +46,8 @@ namespace Oxide.Plugins
         const string NPCGUN = "npcgui.kitsetnum";
         const string NPCGUS = "npcgui.select";
         const string NPCGUV = "npcgui.setval";
+
+        private List<ulong> isopen = new List<ulong>();
         #endregion
 
         #region Message
@@ -79,6 +103,30 @@ namespace Oxide.Plugins
                 CuiHelper.DestroyUi(player, NPCGUS);
                 CuiHelper.DestroyUi(player, NPCGUV);
             }
+        }
+
+        private object OnUserCommand(BasePlayer player, string command, string[] args)
+        {
+            if (command != "npcgui" && isopen.Contains(player.userID))
+            {
+#if DEBUG
+                Puts($"OnPlayerCommand: {command} BLOCKED");
+#endif
+                return true;
+            }
+            return null;
+        }
+
+        private object OnPlayerCommand(BasePlayer player, string command, string[] args)
+        {
+            if (command != "npcgui" && isopen.Contains(player.userID))
+            {
+#if DEBUG
+                Puts($"OnPlayerCommand: {command} BLOCKED");
+#endif
+                return true;
+            }
+            return null;
         }
 
         protected override void LoadDefaultConfig()
@@ -179,6 +227,7 @@ namespace Oxide.Plugins
                         }
                         break;
                     case "close":
+                        IsOpen(player.userID, false);
                         CuiHelper.DestroyUi(player, NPCGUS);
                         CuiHelper.DestroyUi(player, NPCGUI);
                         CuiHelper.DestroyUi(player, NPCGUK);
@@ -205,13 +254,31 @@ namespace Oxide.Plugins
             }
             else
             {
+                if (isopen.Contains(player.userID)) return;
                 NpcEditGUI(player);
             }
+        }
+
+        private void IsOpen(ulong uid, bool set=false)
+        {
+            if(set)
+            {
+#if DEBUG
+                Puts($"Setting isopen for {uid}");
+#endif
+                if(!isopen.Contains(uid)) isopen.Add(uid);
+                return;
+            }
+#if DEBUG
+            Puts($"Clearing isopen for {uid}");
+#endif
+            isopen.Remove(uid);
         }
 
         void NpcEditGUI(BasePlayer player, ulong npc = 0)
         {
             if(player == null) return;
+            IsOpen(player.userID, true);
             CuiHelper.DestroyUi(player, NPCGUI);
 
             string npcname = Lang("needselect");
@@ -384,6 +451,7 @@ namespace Oxide.Plugins
 
         void NPCSelectGUI(BasePlayer player)
         {
+            IsOpen(player.userID, true);
             CuiHelper.DestroyUi(player, NPCGUS);
 
             string description = Lang("npcguisel");
@@ -421,6 +489,7 @@ namespace Oxide.Plugins
 
         void NPCKitGUI(BasePlayer player, ulong npc, string kit)
         {
+            IsOpen(player.userID, true);
             CuiHelper.DestroyUi(player, NPCGUK);
 
             string description = Lang("npcguikit");
