@@ -32,7 +32,7 @@ using Oxide.Game.Rust.Cui;
 
 namespace Oxide.Plugins
 {
-    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.7")]
+    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.8")]
     [Description("Oxide Plugin")]
     class HumanNPCGUI : RustPlugin
     {
@@ -199,6 +199,7 @@ namespace Oxide.Plugins
                             npc = ulong.Parse(args[1]);
                             CuiHelper.DestroyUi(player, NPCGUI);
                             string spawnpos = (string)HumanNPC?.Call("GetHumanNPCInfo", npc, "spawnInfo");
+                            IsOpen(player.userID, false);
                             Teleport(player, StringToVector3(spawnpos));
                         }
                         break;
