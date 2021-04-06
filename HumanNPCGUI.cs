@@ -27,18 +27,17 @@ using System.Globalization;
 using Oxide.Core;
 using Oxide.Core.Libraries.Covalence;
 using Oxide.Core.Plugins;
-using Newtonsoft.Json;
 using Oxide.Game.Rust.Cui;
 
 namespace Oxide.Plugins
 {
-    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.8")]
+    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.9")]
     [Description("Oxide Plugin")]
     class HumanNPCGUI : RustPlugin
     {
         #region vars
         [PluginReference]
-        Plugin HumanNPC;
+        Plugin HumanNPC, Kits;
 
         private const string permNPCGuiUse = "humannpcgui.use";
         const string NPCGUI = "npcgui.editor";
@@ -500,11 +499,10 @@ namespace Oxide.Plugins
 
             int col = 0;
             int row = 0;
-
-            var kits = Interface.Oxide.DataFileSystem.GetFile("Kits");
-            kits.Settings.NullValueHandling = NullValueHandling.Ignore;
-            StoredData storedData = kits.ReadObject<StoredData>();
-            foreach(var kitinfo in storedData.Kits)
+            List<string> kits = new List<string>();
+            Kits?.CallHook("GetKitNames", kits);
+            if (kits == null) return;
+            foreach(var kitinfo in kits)
             {
                 if(row > 10)
                 {
@@ -514,13 +512,13 @@ namespace Oxide.Plugins
                 float[] posb = GetButtonPositionP(row, col);
 
                 if(kit == null) kit = Lang("none");
-                if(kitinfo.Key == kit)
+                if(kitinfo == kit)
                 {
-                    UI.Button(ref container, NPCGUK, UI.Color("#d85540", 1f), kitinfo.Key, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui kitsel {npc.ToString()} {kitinfo.Key}");
+                    UI.Button(ref container, NPCGUK, UI.Color("#d85540", 1f), kitinfo, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui kitsel {npc.ToString()} {kitinfo}");
                 }
                 else
                 {
-                    UI.Button(ref container, NPCGUK, UI.Color("#424242", 1f), kitinfo.Key, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui kitsel {npc.ToString()} {kitinfo.Key}");
+                    UI.Button(ref container, NPCGUK, UI.Color("#424242", 1f), kitinfo, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui kitsel {npc.ToString()} {kitinfo}");
                 }
                 row++;
             }
@@ -596,35 +594,6 @@ namespace Oxide.Plugins
         #endregion
 
         #region classes
-        class StoredData
-        {
-            public Dictionary<string, Kit> Kits = new Dictionary<string, Kit>();
-        }
-        class Kit
-        {
-            public string name;
-            public string description;
-            public int max;
-            public double cooldown;
-            public int authlevel;
-            public bool hide;
-            public bool npconly;
-            public string permission;
-            public string image;
-            public string building;
-            public List<KitItem> items = new List<KitItem>();
-        }
-        class KitItem
-        {
-            public int itemid;
-            public string container;
-            public int amount;
-            public ulong skinid;
-            public bool weapon;
-            public int blueprintTarget;
-            public List<int> mods = new List<int>();
-        }
-
         public static class UI
         {
             public static CuiElementContainer Container(string panel, string color, string min, string max, bool useCursor = false, string parent = "Overlay")
