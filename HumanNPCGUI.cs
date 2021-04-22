@@ -2,7 +2,7 @@
 #region License (GPL v3)
 /*
     DESCRIPTION
-    Copyright (c) 2020 RFC1920 <desolationoutpostpve@gmail.com>
+    Copyright (c) 2021 RFC1920 <desolationoutpostpve@gmail.com>
 
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -28,10 +28,11 @@ using Oxide.Core;
 using Oxide.Core.Libraries.Covalence;
 using Oxide.Core.Plugins;
 using Oxide.Game.Rust.Cui;
+using Newtonsoft.Json;
 
 namespace Oxide.Plugins
 {
-    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.9")]
+    [Info("HumanNPC Editor GUI", "RFC1920", "1.0.10")]
     [Description("Oxide Plugin")]
     class HumanNPCGUI : RustPlugin
     {
@@ -94,7 +95,7 @@ namespace Oxide.Plugins
 
         void Unload()
         {
-            foreach(BasePlayer player in BasePlayer.activePlayerList)
+            foreach (BasePlayer player in BasePlayer.activePlayerList)
             {
                 CuiHelper.DestroyUi(player, NPCGUI);
                 CuiHelper.DestroyUi(player, NPCGUK);
@@ -137,23 +138,25 @@ namespace Oxide.Plugins
         [Command("npcgui")]
         void NpcEdit(IPlayer iplayer, string command, string[] args)
         {
-            if(!iplayer.HasPermission(permNPCGuiUse)) return;
+            if (!iplayer.HasPermission(permNPCGuiUse)) return;
             var player = iplayer.Object as BasePlayer;
             ulong npc = 0;
-
+#if DEBUG
+            string debug = string.Join(",", args); Puts($"{debug}");
+#endif
             // Sure, this looks a little crazy.  But, all the user needs to type is /npcgui.  The rest is driven from the GUI.
-            if(args.Length > 0)
+            if (args.Length > 0)
             {
-                switch(args[0])
+                switch (args[0])
                 {
                     case "npcselkit":
-                        if(args.Length > 2)
+                        if (args.Length > 2)
                         {
                             NPCKitGUI(player, ulong.Parse(args[1]), args[2]);
                         }
                         break;
                     case "kitsel":
-                        if(args.Length > 2)
+                        if (args.Length > 2)
                         {
                             CuiHelper.DestroyUi(player, NPCGUK);
                             npc = ulong.Parse(args[1]);
@@ -162,7 +165,7 @@ namespace Oxide.Plugins
                         }
                         break;
                     case "npctoggle":
-                        if(args.Length > 3)
+                        if (args.Length > 3)
                         {
                             npc = ulong.Parse(args[1]);
                             string toset = args[2];
@@ -172,7 +175,7 @@ namespace Oxide.Plugins
                         NpcEditGUI(player, npc);
                         break;
                     case "spawn":
-                        if(args.Length > 3)
+                        if (args.Length > 3)
                         {
                             npc = ulong.Parse(args[1]);
                             string pos = args[3];
@@ -182,7 +185,7 @@ namespace Oxide.Plugins
                         }
                         break;
                     case "spawnhere":
-                        if(args.Length > 1)
+                        if (args.Length > 1)
                         {
                             npc = ulong.Parse(args[1]);
                             string newSpawn = player.transform.position.x.ToString() + "," + player.transform.position.y + "," + player.transform.position.z.ToString();
@@ -193,7 +196,7 @@ namespace Oxide.Plugins
                         }
                         break;
                     case "tpto":
-                        if(args.Length > 1)
+                        if (args.Length > 1)
                         {
                             npc = ulong.Parse(args[1]);
                             CuiHelper.DestroyUi(player, NPCGUI);
@@ -219,11 +222,17 @@ namespace Oxide.Plugins
                         }
                         break;
                     case "npcset":
-                        if(args.Length > 1)
+                        if (args.Length > 1)
                         {
-                            npc = ulong.Parse(args[1]);
-                            Interface.CallHook("SetHumanNPCInfo", npc, args[2], args[4]);
-                            NpcEditGUI(player, npc);
+                            if (args.Length > 4)
+                            {
+                                npc = ulong.Parse(args[1]);
+#if DEBUG
+                                Puts($"Calling SetHumanNPCInfo {args[2]} {args[4]}");
+#endif
+                                Interface.CallHook("SetHumanNPCInfo", npc, args[2], args[4]);
+                                NpcEditGUI(player, npc);
+                            }
                         }
                         break;
                     case "close":
@@ -243,7 +252,7 @@ namespace Oxide.Plugins
                         break;
                     case "npc":
                     default:
-                        if(args.Length > 1)
+                        if (args.Length > 1)
                         {
                             CuiHelper.DestroyUi(player, NPCGUS);
                             npc = ulong.Parse(args[1]);
@@ -261,12 +270,12 @@ namespace Oxide.Plugins
 
         private void IsOpen(ulong uid, bool set=false)
         {
-            if(set)
+            if (set)
             {
 #if DEBUG
                 Puts($"Setting isopen for {uid}");
 #endif
-                if(!isopen.Contains(uid)) isopen.Add(uid);
+                if (!isopen.Contains(uid)) isopen.Add(uid);
                 return;
             }
 #if DEBUG
@@ -277,12 +286,12 @@ namespace Oxide.Plugins
 
         void NpcEditGUI(BasePlayer player, ulong npc = 0)
         {
-            if(player == null) return;
+            if (player == null) return;
             IsOpen(player.userID, true);
             CuiHelper.DestroyUi(player, NPCGUI);
 
             string npcname = Lang("needselect");
-            if(npc > 0)
+            if (npc > 0)
             {
                 npcname = Lang("editing") + " " + (string)HumanNPC?.Call("HumanNPCname", npc);
             }
@@ -303,57 +312,41 @@ namespace Oxide.Plugins
             int col = 0;
             int row = 0;
 
-            if(npc == 0)
+            if (npc == 0)
             {
                 UI.Label(ref container, NPCGUI, UI.Color("#ffffff", 1f), Lang("mustselect"), 24, "0.2 0.47", "0.7 0.53");
             }
             else
             {
-                Dictionary<string, string> npcinfo = new Dictionary<string, string>
+                Dictionary<string, string> npcinfo = new Dictionary<string, string>();
+                object x = HumanNPC?.Call("GetHumanNPCInfos", npc);
+                if (x != null)
                 {
-                    { "displayName", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "displayName") },
-                    { "kit", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "spawnkit") },
-//                    { "visible", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "visible") },
-                    { "invulnerable", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "invulnerable") },
-                    { "lootable", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "lootable") },
-                    { "hostile", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "hostile") },
-                    { "ahostile", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "ahostile") },
-                    { "defend", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "defend") },
-                    { "evade", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "evade") },
-                    { "follow", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "follow") },
-                    { "followtime", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "followtime") },
-                    { "allowsit", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "allowsit") },
-                    { "allowride", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "allowride") },
-                    { "needsAmmo", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "needsAmmo") },
-                    { "dropWeapon", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "dropWeapon") },
-                    { "health", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "health") },
-                    { "attackDistance", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "attackDistance") },
-                    { "damageAmount", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "damageAmount") },
-                    { "damageInterval", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "damageInterval") },
-                    { "maxDistance", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "maxDistance") },
-                    { "damageDistance", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "damageDistance") },
-                    { "collisionRadius", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "collisionRadius") },
-                    { "respawnSeconds", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "respawnSeconds") },
-                    { "speed", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "speed") },
-                    { "stopandtalk", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "stopandtalk") },
-                    { "stopandtalkSeconds", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "stopandtalkSeconds") },
-                    { "hitchance", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "hitchance") },
-                    { "reloadDuration", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "reloadDuration") },
-                    { "band", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "band") },
-                    { "hostileTowardsArmed", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "hostileTowardsArmed") },
-                    { "hostileTowardsArmedHard", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "hostileTowardsArmedHard") },
-                    { "raiseAlarm", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "raiseAlarm") },
-                    { "spawnInfo", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "spawnInfo") },
-                    { "hello", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "hello") },
-                    { "bye", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "bye") },
-                    { "hurt", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "hurt") },
-                    { "use", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "use") },
-                    { "kill", (string) HumanNPC?.Call("GetHumanNPCInfo", npc, "kill") }
+                    var json = JsonConvert.SerializeObject(x);
+                    npcinfo = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
+                }
+                npcinfo["spawnInfo"] = (string)HumanNPC?.Call("GetHumanNPCInfo", npc, "spawnInfo");
+                npcinfo["hello"] = (string)HumanNPC?.Call("GetHumanNPCInfo", npc, "hello");
+                npcinfo["bye"] = (string)HumanNPC?.Call("GetHumanNPCInfo", npc, "bye");
+                npcinfo["hurt"] = (string)HumanNPC?.Call("GetHumanNPCInfo", npc, "hurt");
+                npcinfo["use"] = (string)HumanNPC?.Call("GetHumanNPCInfo", npc, "use");
+                npcinfo["kill"] = (string)HumanNPC?.Call("GetHumanNPCInfo", npc, "kill");
+                npcinfo["kit"] = (string)HumanNPC?.Call("GetHumanNPCInfo", npc, "spawnkit");
+
+                var validAttrs = new string[] {
+                    "displayName", "kit", "invulnerable", "lootable", "hostile",
+                    "ahostile", "defend", "evade", "follow", "followtime", "allowsit",
+                    "allowride", "needsAmmo", "dropWeapon", "health", "attackDistance",
+                    "damageAmount", "damageInterval", "maxDistance", "damageDistance",
+                    "collisionRadius", "respawnSeconds", "speed", "stopandtalk",
+                    "stopandtalkSeconds", "hitchance", "reloadDuration", "band",
+                    "hostileTowardsArmed", "hostileTowardsArmedHard", "raiseAlarm",
+                    "spawnInfo", "hello", "bye", "hurt", "use", "kill", "kit"
                 };
+
                 Dictionary<string, bool> isBool = new Dictionary<string, bool>
                 {
                     { "enable", true },
-//                    { "visible", true },
                     { "invulnerable", true },
                     { "lootable", true },
                     { "hostile", true },
@@ -379,9 +372,10 @@ namespace Oxide.Plugins
                     { "kill", true }
                 };
 
-                foreach(KeyValuePair<string,string> info in npcinfo)
+                foreach (KeyValuePair<string, string> info in npcinfo)
                 {
-                    if(row > 11)
+                    if (!validAttrs.Contains(info.Key)) continue;
+                    if (row > 11)
                     {
                         row = 0;
                         col++;
@@ -390,15 +384,13 @@ namespace Oxide.Plugins
                     float[] posl = GetButtonPositionP(row, col);
                     float[] posb = GetButtonPositionP(row, col + 1);
 
-                    if(!isLarge.ContainsKey(info.Key))
+                    if (info.Key == "kit")
                     {
-                        UI.Label(ref container, NPCGUI, UI.Color("#ffffff", 1f), info.Key, 12, $"{posl[0]} {posl[1]}", $"{posl[0] + ((posl[2] - posl[0]) / 2)} {posl[3]}");
-                    }
-                    if(info.Key == "kit")
-                    {
-                        if(plugins.Exists("Kits"))
+                        posl = GetButtonPositionP(11, 4);
+                        posb = GetButtonPositionP(11, 5);
+                        if (plugins.Exists("Kits"))
                         {
-                            string kitname = info.Value != null ? info.Value : Lang("none");
+                            string kitname = info.Value ?? Lang("none");
                             UI.Button(ref container, NPCGUI, UI.Color("#d85540", 1f), kitname, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui npcselkit {npc.ToString()} {kitname}");
                         }
                         else
@@ -406,35 +398,41 @@ namespace Oxide.Plugins
                             UI.Label(ref container, NPCGUI, UI.Color("#ffffff", 1f), Lang("none"), 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}");
                         }
                     }
-                    else if(info.Key == "spawnInfo")
+                    else if (info.Key == "spawnInfo")
                     {
                         UI.Label(ref container, NPCGUI, UI.Color("#535353", 1f), info.Value, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}");
                         UI.Input(ref container, NPCGUI, UI.Color("#ffffff", 1f), info.Value, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui spawn {npc.ToString()} {info.Key} ");
-                        posb = GetButtonPositionP(row, col + 2);
+                        posb = GetButtonPositionP(0, 6);
                         UI.Button(ref container, NPCGUI, UI.Color("#d85540", 1f), Lang("spawnhere"), 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui spawnhere {npc.ToString()} ");
                         if (StringToVector3(info.Value) != Vector3.zero)
                         {
                             row++;
-                            posb = GetButtonPositionP(row, col + 2);
+                            posb = GetButtonPositionP(1, 6);
                             UI.Button(ref container, NPCGUI, UI.Color("#d85540", 1f), Lang("tpto"), 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui tpto {npc.ToString()} ");
                         }
                     }
-                    else if(isLarge.ContainsKey(info.Key))
+                    else if (isLarge.ContainsKey(info.Key))
                     {
-//                        string oldval = info.Value != null ? info.Value : Lang("unset");
-//                        UI.Label(ref container, NPCGUI, UI.Color("#535353", 1f), oldval, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]))} {posb[3]}");
-//                        UI.Input(ref container, NPCGUI, UI.Color("#ffffff", 1f), oldval, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]))} {posb[3]}", $"npcgui npcset {npc.ToString()} {info.Key} {oldval} ");
+                        //string oldval = info.Value != null ? info.Value : Lang("unset");
+                        //UI.Label(ref container, NPCGUI, UI.Color("#535353", 1f), oldval, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]))} {posb[3]}");
+                        //UI.Input(ref container, NPCGUI, UI.Color("#ffffff", 1f), oldval, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]))} {posb[3]}", $"npcgui npcset {npc.ToString()} {info.Key} {oldval} ");
                     }
-                    else if(isBool.ContainsKey(info.Key))
+                    else if (isBool.ContainsKey(info.Key))
                     {
                         UI.Button(ref container, NPCGUI, UI.Color("#222255", 1f), info.Value, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui npctoggle {npc.ToString()} {info.Key} {info.Value}");
                     }
                     else
                     {
-                        string oldval = info.Value != null ? info.Value : Lang("unset");
+                        string oldval = info.Value ?? Lang("unset");
                         UI.Label(ref container, NPCGUI, UI.Color("#535353", 1f), oldval, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}");
                         UI.Input(ref container, NPCGUI, UI.Color("#ffffff", 1f), oldval, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui npcset {npc.ToString()} {info.Key} ");
                     }
+                    if (!isLarge.ContainsKey(info.Key))
+                    {
+                        // Label for each attribute
+                        UI.Label(ref container, NPCGUI, UI.Color("#ffffff", 1f), info.Key, 12, $"{posl[0]} {posl[1]}", $"{posl[0] + ((posl[2] - posl[0]) / 2)} {posl[3]}");
+                    }
+
                     row++;
                 }
                 UI.Label(ref container, NPCGUI, UI.Color("#ffffff", 1f), Lang("guihelp1"), 12, "0.02 0.08", "0.9 0.11");
@@ -464,17 +462,17 @@ namespace Oxide.Plugins
             int row = 0;
 
             List<ulong> npcs = (List<ulong>)HumanNPC?.Call("HumanNPCs");
-            foreach(ulong npc in npcs)
+            foreach (ulong npc in npcs)
             {
-                if(row > 10)
+                if (row > 10)
                 {
                     row = 0;
                     col++;
                 }
                 var hBand = (string)HumanNPC?.Call("GetHumanNPCInfo", npc, "band");
-                if(hBand == "99") continue;
+                if (hBand == "99") continue;
                 string color = "#2244cc";
-                if(hBand != "0") color = "#22cc44";
+                if (hBand != "0") color = "#22cc44";
 
                 var hName = (string)HumanNPC?.Call("HumanNPCname", npc);
                 float[] posb = GetButtonPositionP(row, col);
@@ -502,17 +500,17 @@ namespace Oxide.Plugins
             List<string> kits = new List<string>();
             Kits?.CallHook("GetKitNames", kits);
             if (kits == null) return;
-            foreach(var kitinfo in kits)
+            foreach (var kitinfo in kits)
             {
-                if(row > 10)
+                if (row > 10)
                 {
                     row = 0;
                     col++;
                 }
                 float[] posb = GetButtonPositionP(row, col);
 
-                if(kit == null) kit = Lang("none");
-                if(kitinfo == kit)
+                if (kit == null) kit = Lang("none");
+                if (kitinfo == kit)
                 {
                     UI.Button(ref container, NPCGUK, UI.Color("#d85540", 1f), kitinfo, 12, $"{posb[0]} {posb[1]}", $"{posb[0] + ((posb[2] - posb[0]) / 2)} {posb[3]}", $"npcgui kitsel {npc.ToString()} {kitinfo}");
                 }
@@ -545,14 +543,14 @@ namespace Oxide.Plugins
         private bool TryGetPlayerView(BasePlayer player, out Quaternion viewAngle)
         {
             viewAngle = new Quaternion(0f, 0f, 0f, 0f);
-            if(player.serverInput?.current == null) return false;
+            if (player.serverInput?.current == null) return false;
             viewAngle = Quaternion.Euler(player.serverInput.current.aimAngles);
             return true;
         }
 
         public void Teleport(BasePlayer player, Vector3 position)
         {
-            if(player.net?.connection != null) player.SetPlayerFlag(BasePlayer.PlayerFlags.ReceivingSnapshot, true);
+            if (player.net?.connection != null) player.SetPlayerFlag(BasePlayer.PlayerFlags.ReceivingSnapshot, true);
 
             player.SetParent(null, true, true);
             player.EnsureDismounted();
@@ -561,7 +559,7 @@ namespace Oxide.Plugins
             player.StartSleeping();
             player.SendNetworkUpdateImmediate(false);
 
-            if(player.net?.connection != null) player.ClientRPCPlayer(null, player, "StartLoading");
+            if (player.net?.connection != null) player.ClientRPCPlayer(null, player, "StartLoading");
         }
 
         private void StartSleeping(BasePlayer player)
@@ -690,7 +688,7 @@ namespace Oxide.Plugins
             }
             public static string Color(string hexColor, float alpha)
             {
-                if(hexColor.StartsWith("#"))
+                if (hexColor.StartsWith("#"))
                 {
                     hexColor = hexColor.Substring(1);
                 }
